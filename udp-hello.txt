@@ -1,0 +1,82 @@
+server
+=====================================================================================================================
+#include <iostream>
+#include <cstring>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+#define PORT	 8080
+#define MAXLINE 1024
+
+using namespace std;
+
+int main() {
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    sockaddr_in servaddr{}, cliaddr{};
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = INADDR_ANY;
+    servaddr.sin_port = htons(PORT);
+
+    if (bind(sockfd, reinterpret_cast<const sockaddr *>(&servaddr), sizeof(servaddr)) < 0) {
+        perror("Bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    socklen_t len = sizeof(cliaddr);
+    char buffer[MAXLINE];
+    const char *hello = "Hello from server";
+
+    int n = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, reinterpret_cast<struct sockaddr *>(&cliaddr), &len);
+    buffer[n] = '\0';
+    printf("Client : %s\n", buffer);
+    sendto(sockfd, hello, strlen(hello), MSG_CONFIRM, reinterpret_cast<const sockaddr *>(&cliaddr), len);
+    cout << "Hello message sent." << endl;
+
+    return 0;
+}
+====================================================================================================================
+client
+=========================================================================================================================
+#include <iostream>
+#include <cstring>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+
+#define PORT	 8080
+#define MAXLINE 1024
+
+using namespace std;
+
+int main() {
+    int sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    sockaddr_in servaddr{};
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_port = htons(PORT);
+    servaddr.sin_addr.s_addr = INADDR_ANY;
+
+    const char *hello = "Hello from client";
+    sendto(sockfd, hello, strlen(hello), MSG_CONFIRM, (const sockaddr *)&servaddr, sizeof(servaddr));
+
+    char buffer[MAXLINE];
+    socklen_t len = sizeof(servaddr);
+    int n = recvfrom(sockfd, buffer, MAXLINE, MSG_WAITALL, (sockaddr *)&servaddr, &len);
+    buffer[n] = '\0';
+    cout << "Server: " << buffer << endl;
+
+    close(sockfd);
+    return 0;
+}

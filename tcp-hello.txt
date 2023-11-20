@@ -1,0 +1,60 @@
+server
+==============================================================
+#include <iostream>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+using namespace std;
+
+int main() {
+    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+
+    sockaddr_in serverAddr{AF_INET, htons(8080), {INADDR_ANY}};
+
+    bind(serverSocket, (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+    listen(serverSocket, 5);
+    cout << "Server waiting for incoming connections...\n";
+
+    int clientSocket = accept(serverSocket, nullptr, nullptr);
+
+    char buffer[1024];
+    recv(clientSocket, buffer, sizeof(buffer), 0);
+    cout << "Client says: " << buffer << endl;
+
+    send(clientSocket, "Hello from server", 17, 0);
+
+    close(clientSocket);
+    close(serverSocket);
+
+    return 0;
+}
+
+===============================================================
+client
+===============================================================
+
+#include <iostream>
+#include <cstring>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+using namespace std;
+
+int main() {
+    int clientSocket = socket(AF_INET, SOCK_STREAM, 0);
+    
+    sockaddr_in serverAddr{AF_INET, htons(8080), {inet_addr("127.0.0.1")}};
+
+    connect(clientSocket, (sockaddr*)&serverAddr, sizeof(serverAddr));
+
+    send(clientSocket, "Hello", 5, 0);
+
+    char buffer[1024];
+    recv(clientSocket, buffer, sizeof(buffer), 0);
+    cout << "Server says: " << buffer << endl;
+
+    close(clientSocket);
+
+    return 0;
+}
